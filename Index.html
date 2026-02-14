@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --pink: #ff7eb9;
+            --hot-pink: #ff2d95;
+            --neon: #00f2fe;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Outfit', sans-serif; background: #050505;
+            color: white; overflow: hidden; touch-action: manipulation;
+        }
+
+        #bg-elements { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .balloon, .heart-float { position: absolute; bottom: -100px; opacity: 0.6; animation: floatUp 10s linear infinite; }
+
+        .screen {
+            position: absolute; width: 100%; height: 100%; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.6s ease-in-out; text-align: center;
+            overflow-y: auto;
+        }
+        .hidden { opacity: 0; transform: translateY(30px); pointer-events: none; visibility: hidden; }
+
+        .reveal-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(2.5rem, 10vw, 4.5rem);
+            background: linear-gradient(to right, var(--pink), #fff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(255, 126, 185, 0.4));
+        }
+
+        /* --- CAKE STYLE --- */
+        .cake { position: relative; width: 250px; height: 250px; cursor: pointer; margin-top: 60px; }
+        .tier { 
+            position: absolute; left: 50%; transform: translateX(-50%);
+            background: #fca5c0; border-radius: 15px 15px 10px 10px;
+            box-shadow: inset 0 -15px 0 rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .tier::after { 
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 25px;
+            background: #fff; border-radius: 20px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
+        }
+        .t1 { width: 220px; height: 90px; bottom: 0; }
+        .t2 { width: 160px; height: 75px; bottom: 90px; background: #ff8fb1; }
+        .t3 { width: 100px; height: 60px; bottom: 165px; }
+        
+        .candle-stick { width: 12px; height: 45px; background: repeating-linear-gradient(45deg, #fff, #fff 5px, var(--pink) 5px, var(--pink) 10px); position: absolute; bottom: 220px; left: 50%; transform: translateX(-50%); border-radius: 4px; }
+        .flame { 
+            width: 18px; height: 30px; background: #ffeb3b; border-radius: 50% 50% 20% 20%;
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 0 25px #ffeb3b, 0 0 50px #ff9800; animation: flicker 0.1s infinite alternate;
+        }
+
+        /* --- GALLERY STYLE --- */
+        .gallery-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; width: 100%; }
+        .gallery-card { 
+            width: 200px; height: 280px; background: white; padding: 10px; 
+            border-radius: 10px; transform: rotate(var(--r)); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); transition: 0.3s;
+        }
+        .gallery-card img { width: 100%; height: 75%; object-fit: cover; border-radius: 5px; }
+        .gallery-card p { color: #333; font-family: 'Dancing Script'; font-size: 1.1rem; margin: 10px 0; }
+        .memory-message-box {
+            margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--pink); border-radius: 15px; max-width: 85%;
+            color: white; font-size: 1.2rem; line-height: 1.5;
+            box-shadow: 0 0 20px rgba(255, 126, 185, 0.2); backdrop-filter: blur(5px);
+        }
+
+        /* --- SECRET NOTE STYLE --- */
+        .note-container {
+            position: relative; width: 90%; max-width: 750px; height: 500px; 
+            border: 3px solid var(--pink); border-radius: 15px; 
+            overflow: hidden; margin: 20px 0;
+            box-shadow: 0 0 30px rgba(255, 126, 185, 0.3);
+        }
+        #secretNote {
+            padding: 30px; color: #444; 
+            font-family: 'Dancing Script', cursive; 
+            font-size: 1.5rem; height: 100%; 
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; 
+            background: #fdfcf0; 
+            background-image: linear-gradient(#e1e1e1 1px, transparent 1px);
+            background-size: 100% 1.5em; line-height: 1.5em;
+            text-align: center; box-sizing: border-box;
+        }
+        #signature {
+            align-self: flex-end; margin-top: 15px; font-size: 1.4rem;
+            color: var(--hot-pink); opacity: 0.9;
+        }
+
+        /* --- NEON FINALE STYLE --- */
+        .photo-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; padding: 40px 20px; }
+        
+        .polaroid-large { 
+            background: white; padding: 10px 10px 35px 10px; 
+            border-radius: 5px; border: 2px solid var(--pink);
+            box-shadow: 0 0 15px var(--pink), 0 0 30px var(--hot-pink), 0 20px 50px rgba(0,0,0,0.8); 
+            transform: rotate(var(--rot)); transition: 0.4s ease;
+            cursor: pointer;
+        }
+        .polaroid-large:hover {
+            transform: scale(1.1) rotate(0deg) !important;
+            box-shadow: 0 0 25px var(--neon), 0 0 50px var(--neon);
+            border-color: var(--neon);
+            z-index: 100;
+        }
+        .polaroid-large img { width: 220px; height: 280px; object-fit: cover; }
+
+        #fTitle {
+            text-shadow: 0 0 10px var(--pink), 0 0 20px var(--hot-pink);
+            margin-top: 50px;
+        }
+
+        @keyframes flicker { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.15); } }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 0.6; } 100% { transform: translateY(-110vh); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="bg-elements"></div>
+    <audio id="bgMusic" loop><source src="saavane-happy-birthday-254480.mp3" type="audio/mpeg"></audio>
+
+    <div id="p1" class="screen">
+        <h1 class="reveal-text">Heyy Cutiee I have a  Special Surprise for you..</h1>
+        <button onclick="start()" style="padding:15px 40px; border-radius:50px; border:none; background:white; font-weight:bold; cursor:pointer;">ENTER MAGIC</button>
+    </div>
+
+    <div id="p2" class="screen hidden">
+        <h2 class="reveal-text">Make a Wish & Blow 🎂🍰</h2>
+        <div class="cake" onclick="blow()">
+            <div class="tier t1"></div>
+            <div class="tier t2"></div>
+            <div class="tier t3"></div>
+            <div class="candle-stick"><div id="flame" class="flame"></div></div>
+        </div>
+        <p style="margin-top: 40px; color: var(--neon); letter-spacing: 2px;">BLOW INTO MIC OR TAP CANDLE</p>
+    </div>
+
+    <div id="p3" class="screen hidden">
+        <h2 class="reveal-text">Our Best Memories</h2>
+        <div class="gallery-container" id="memoryScroll"></div>
+        <div id="personalMessage" class="memory-message-box"></div>
+        <button onclick="nextPage('p4'); initScratch();" style="margin-top: 20px; padding:12px 35px; border-radius:20px; border:1px solid white; background:none; color:white; cursor:pointer;">CONTINUE →</button>
+    </div>
+
+    <div id="p4" class="screen hidden">
+        <h2 class="reveal-text">A Heartfelt Note ❤️</h2>
+        <div class="note-container">
+            <div id="secretNote">
+                <span id="noteText"></span>
+                <span id="signature"></span>
+            </div>
+            <canvas id="scratchCanvas" style="position: absolute; top:0; left:0; cursor: crosshair;"></canvas>
+        </div>
+        <div onclick="startCountdown()" style="cursor:pointer; margin-top: 10px;">
+            <span style="font-size: 4rem;">🎁</span>
+            <p style="color: var(--neon); font-weight: bold;">TAP TO UNWRAP SURPRISE</p>
+        </div>
+    </div>
+
+    <div id="p5" class="screen hidden">
+        <div id="countdown-timer" style="font-size: 10rem; color: var(--neon); font-weight: 900;">3</div>
+    </div>
+
+    <div id="p6" class="screen hidden" style="overflow-y: auto; display: block; padding-top: 40px;">
+        <div id="photoGrid" class="photo-grid"></div>
+        <h1 id="fTitle" class="reveal-text">Happy Birthday!</h1>
+        <p id="fWish" style="padding: 0 20px; font-size: 1.2rem; max-width: 600px; margin: auto; color: #fff;"></p>
+        <div style="font-size: 4rem; margin: 20px 0;">❤️🫂🧿</div>
+        <button onclick="location.reload()" style="background:var(--pink); color:white; border:none; padding:15px 40px; border-radius:50px; margin: 30px 0; cursor:pointer;">REPLAY</button>
+    </div>
+
+    <script>
+        const config = {
+            name: "Mayuri",
+            sender: "With Love, Always", 
+            note: "I still remember the day we started talking like a normal strangers, never knowing that one day you would become my whole comfort place. Today, you are not just my sister, you are my safe space, my peace, my happiness in human form. Whenever life feels heavy and my heart feels tired, you are the first person I think of. Love You So Much ! ❤️",
+            wish: "Wishing you a year full of love ❤️, happiness 😍, and all your heart desires! Missing You So Much ..🥹😘😘",
+            memoryMsg: "तस तर जास्त फोटो काढायची आवड आपल्याला नाहीच सोबत असलो की फालतू बडबड 😅 चालायची म्हणून सोबत आपले फोटो जरा कमीच आहेत 😁पण जे आहेत ते टाकले ज्याने काही क्षण आठवतील तुला..🥹💖 Every moment with you is a treasure! ✨", 
+            
+            // --- SECTION 1: MEMORIES (YOU + HER) ---
+            memories: [
+                { url: "IMG_20240227_151436.jpg", txt: "First photo RangMahal 😅" },
+                { url: "IMG_20241115_115147.jpg", txt: "Gondhshwar Temple 🛕" },
+                { url: "IMG_20241119_182643.jpg", txt: "So Cuteee 😍" },
+                { url: "Snapchat-237860734.jpg", txt: "Jevha tu mla bhetayla aaleli🥺" }
+            ],
+
+            // --- SECTION 2: FINAL PAGE (SOLO PHOTOS OF HER) ---
+            birthdayGirlPhotos: [
+                "Main_pic.jpeg",
+                "pic1.jpeg", 
+                "pic2.jpeg", 
+                "pic3.jpeg",
+                "pic4.jpeg"
+            ]
+        };
+
+        function nextPage(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function start() {
+            document.getElementById('bgMusic').play().catch(() => {});
+            nextPage('p2');
+            spawnAlways();
+            initMic();
+        }
+
+        function blow() {
+            document.getElementById('flame').style.visibility = 'hidden';
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+            setTimeout(() => { nextPage('p3'); loadGallery(); }, 1200);
+        }
+
+        function loadGallery() {
+            const container = document.getElementById('memoryScroll');
+            const messageBox = document.getElementById('personalMessage');
+            container.innerHTML = '';
+            messageBox.innerText = config.memoryMsg;
+            config.memories.forEach((m, i) => {
+                const card = document.createElement('div');
+                card.className = 'gallery-card';
+                card.style.setProperty('--r', (i % 2 === 0 ? '-5deg' : '5deg'));
+                card.innerHTML = `<img src="${m.url}"><p>${m.txt}</p>`;
+                container.appendChild(card);
+            });
+        }
+
+        function initScratch() {
+            const c = document.getElementById('scratchCanvas');
+            const ctx = c.getContext('2d');
+            const rect = document.querySelector('.note-container').getBoundingClientRect();
+            c.width = rect.width; 
+            c.height = rect.height;
+            
+            document.getElementById('noteText').innerText = config.note;
+            document.getElementById('signature').innerText = "— " + config.sender;
+            
+            ctx.fillStyle = '#C0C0C0';
+            ctx.fillRect(0, 0, c.width, c.height);
+            
+            ctx.fillStyle = '#444';
+            ctx.font = "bold 18px Outfit";
+            ctx.textAlign = "center";
+            ctx.fillText("SCRATCH WITH LOVE", c.width/2, c.height/2);
+
+            let drawing = false;
+            const scratch = (e) => {
+                if(!drawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - r.left;
+                const y = (e.clientY || e.touches[0].clientY) - r.top;
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI * 2); ctx.fill();
+            }
+            c.onmousedown = c.ontouchstart = () => drawing = true;
+            window.onmouseup = window.ontouchend = () => drawing = false;
+            c.onmousemove = c.ontouchmove = scratch;
+        }
+
+        function startCountdown() {
+            nextPage('p5');
+            let count = 3;
+            const timer = document.getElementById('countdown-timer');
+            const interval = setInterval(() => {
+                count--;
+                if(count > 0) timer.innerText = count;
+                else {
+                    clearInterval(interval);
+                    nextPage('p6');
+                    initFinal();
+                }
+            }, 1000);
+        }
+
+        function initFinal() {
+            const grid = document.getElementById('photoGrid');
+            grid.innerHTML = '';
+            
+            // USES ONLY THE SOLO PHOTOS FOR THE NEON PAGE
+            const allPics = config.birthdayGirlPhotos; 
+
+            allPics.forEach(url => {
+                const div = document.createElement('div');
+                div.className = 'polaroid-large';
+                div.style.setProperty('--rot', (Math.random()*16-8)+'deg');
+                div.innerHTML = `<img src="${url}">`;
+                grid.appendChild(div);
+            });
+
+            document.getElementById('fTitle').innerText = `Happy Birthday, ${config.name}!`;
+            document.getElementById('fWish').innerText = config.wish;
+
+            const end = Date.now() + (15 * 1000);
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        function spawnAlways() {
+            const container = document.getElementById('bg-elements');
+            setInterval(() => {
+                const el = document.createElement('div');
+                el.className = Math.random() > 0.5 ? 'balloon' : 'heart-float';
+                if(el.className === 'balloon') el.style.background = ['#ff7eb9','#00f2fe','#ff2d95'][Math.floor(Math.random()*3)];
+                else el.innerHTML = '❤️';
+                el.style.left = Math.random() * 100 + 'vw';
+                container.appendChild(el);
+                setTimeout(() => el.remove(), 10000);
+            }, 600);
+        }
+
+        function initMic() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                const data = new Uint8Array(analyser.frequencyBinCount);
+                function check() {
+                    analyser.getByteFrequencyData(data);
+                    if ((data.reduce((a,b)=>a+b)/data.length) > 45) blow();
+                    else requestAnimationFrame(check);
+                }
+                check();
+            }).catch(() => {});
+        }
+    </script>
+</body>
+</html>
